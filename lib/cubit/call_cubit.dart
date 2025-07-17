@@ -11,10 +11,11 @@ class CallCubit extends Cubit<VideoCallState> {
 
   StreamVideo? _client;
   Call? _currentCall;
-  String _callId = 'test-room';
+  String _callId = 'I1yWB9hRGbYM';
 
   Future<void> initializeCall(StreamVideo client) async {
     _client = client;
+    _client!.connect();
     await joinCall();
   }
 
@@ -35,9 +36,11 @@ class CallCubit extends Cubit<VideoCallState> {
         callType: StreamCallType.defaultType(),
         id: _callId,
       );
+      await _currentCall!.getOrCreate();
       await _currentCall!.join();
       emit(CallJoined(_currentCall!));
     } catch (e) {
+      print('Failed to join call: $e');
       emit(CallError('Failed to join call: $e'));
     }
   }
@@ -47,6 +50,7 @@ class CallCubit extends Cubit<VideoCallState> {
       if (_currentCall != null) {
         await _currentCall!.leave();
         emit(CallLeft(_currentCall!, _callId));
+        emit(CallInitial());
       }
     } catch (e) {
       emit(CallError('Failed to leave call: $e'));

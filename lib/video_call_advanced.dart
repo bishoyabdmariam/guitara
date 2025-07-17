@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'cubit/call_cubit.dart';
 import 'cubit/call_state.dart';
 import 'injection_container.dart';
-import 'main.dart';
 
 class AdvancedVideoCallScreen extends StatefulWidget {
   const AdvancedVideoCallScreen({super.key});
@@ -19,7 +18,13 @@ class _AdvancedVideoCallScreenState extends State<AdvancedVideoCallScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CallCubit>().initializeCall(getIt.get<StreamVideo>());
+      final cubit = context.read<CallCubit>();
+      if (cubit.currentCall == null) {
+        cubit.initializeCall(getIt.get<StreamVideo>());
+        cubit.joinCall();
+      } else {
+        cubit.joinCall();
+      }
     });
   }
 
@@ -30,16 +35,19 @@ class _AdvancedVideoCallScreenState extends State<AdvancedVideoCallScreen> {
         title: const Text('Guitara Video Call'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            context.read<CallCubit>().leaveCall();
+            Navigator.of(context).pop();
+          },
+        ),
       ),
       body: BlocBuilder<CallCubit, VideoCallState>(
         builder: (context, state) {
           return BlocListener<CallCubit, VideoCallState>(
             listener: (context, state) {
-              if (state is CallLeft || state is CallError) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => HomeScreen()),
-                );
-              }
+              if (state is CallLeft || state is CallError) {}
             },
             child: _buildBody(state),
           );
@@ -96,6 +104,17 @@ class _AdvancedVideoCallScreenState extends State<AdvancedVideoCallScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
+          // Flip camera button
+          FloatingActionButton(
+            onPressed: () async {
+              final call = context.read<CallCubit>().currentCall;
+              if (call != null) {
+                await call.flipCamera();
+              }
+            },
+            backgroundColor: Colors.grey[700],
+            child: const Icon(Icons.flip_camera_ios, color: Colors.white),
+          ),
           // Leave call button
           FloatingActionButton(
             onPressed: () async {

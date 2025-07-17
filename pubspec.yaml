@@ -41,7 +41,7 @@ dependencies:
   stream_video_screen_sharing: ^0.10.0
   
   # State Management
-  flutter_bloc: ^8.1.4
+  flutter_bloc: ^9.1.1
   get_it: ^8.0.3
 
 dev_dependencies:
