@@ -34,9 +34,19 @@ class VideoCallApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData(
+        scaffoldBackgroundColor: Color(0xffF0EFF4),
+        primaryColor: Color(0xff958fb6),
+        textTheme: TextTheme(
+          bodyMedium: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Color(0xff958fb6),
+          ),
+        ),
+      ),
       debugShowCheckedModeBanner: false,
       title: 'Guitara Video Call',
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: BlocProvider.value(
         value: getIt.get<CallCubit>(),
         child: const HomeScreen(),

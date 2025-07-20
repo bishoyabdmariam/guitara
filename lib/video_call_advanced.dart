@@ -28,30 +28,23 @@ class _AdvancedVideoCallScreenState extends State<AdvancedVideoCallScreen> {
     });
   }
 
+  var cameraEnabled = true;
+  var micEnabled = true;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Guitara Video Call'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            context.read<CallCubit>().leaveCall();
-            Navigator.of(context).pop();
+    return SafeArea(
+      child: Scaffold(
+        body: BlocBuilder<CallCubit, VideoCallState>(
+          builder: (context, state) {
+            return BlocListener<CallCubit, VideoCallState>(
+              listener: (context, state) {
+                if (state is CallLeft || state is CallError) {}
+              },
+              child: _buildBody(state),
+            );
           },
         ),
-      ),
-      body: BlocBuilder<CallCubit, VideoCallState>(
-        builder: (context, state) {
-          return BlocListener<CallCubit, VideoCallState>(
-            listener: (context, state) {
-              if (state is CallLeft || state is CallError) {}
-            },
-            child: _buildBody(state),
-          );
-        },
       ),
     );
   }
@@ -77,18 +70,80 @@ class _AdvancedVideoCallScreenState extends State<AdvancedVideoCallScreen> {
     }
   }
 
+  PreferredSizeWidget? _buildAppBar(Call call, BuildContext context) {
+    return PreferredSize(
+      preferredSize: Size.fromHeight(0),
+      child: Container(
+        color: Colors.transparent,
+        child: Row(children: []),
+      ),
+    );
+  }
+
   Widget _buildVideoCall(CallJoined state) {
     return StreamCallContainer(
       call: state.call,
       callContentWidgetBuilder: (context, call) {
-        return StreamCallContent(
-          call: call,
-          onLeaveCallTap: () {
-            context.read<CallCubit>().leaveCall();
-          },
-          callControlsWidgetBuilder: (context, call) {
-            return _buildCustomControls();
-          },
+        return Stack(
+          children: [
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              top: 0,
+              child: StreamCallContent(
+                callAppBarWidgetBuilder: (context, call) {
+                  return _buildAppBar(call, context);
+                },
+                extendBody: true,
+                layoutMode: ParticipantLayoutMode.pictureInPicture,
+                call: call,
+                onLeaveCallTap: () {
+                  context.read<CallCubit>().leaveCall();
+                },
+
+                callControlsWidgetBuilder: (context, call) {
+                  return _buildCustomControls();
+                },
+              ),
+            ),
+
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                color: Colors.transparent,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        context.read<CallCubit>().leaveCall();
+                      },
+                      icon: Icon(
+                        Icons.arrow_back,
+                        size: 24,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    Spacer(),
+                    IconButton(
+                      onPressed: () {
+                        call.flipCamera();
+                      },
+                      icon: Icon(
+                        Icons.flip_camera_ios_outlined,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -98,30 +153,55 @@ class _AdvancedVideoCallScreenState extends State<AdvancedVideoCallScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black87,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           // Flip camera button
-          FloatingActionButton(
-            onPressed: () async {
-              final call = context.read<CallCubit>().currentCall;
-              if (call != null) {
-                await call.flipCamera();
-              }
-            },
-            backgroundColor: Colors.grey[700],
-            child: const Icon(Icons.flip_camera_ios, color: Colors.white),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: IconButton(
+              onPressed: () async {
+                final call = context.read<CallCubit>().currentCall;
+                if (call != null) {
+                  cameraEnabled = !cameraEnabled;
+                  await call.setCameraEnabled(enabled: cameraEnabled);
+                }
+              },
+              style: IconButton.styleFrom(backgroundColor: Colors.white),
+              icon: const Icon(
+                Icons.photo_camera_front,
+                color: Color(0xff67628e),
+              ),
+            ),
           ),
           // Leave call button
-          FloatingActionButton(
-            onPressed: () async {
-              context.read<CallCubit>().leaveCall();
-            },
-            backgroundColor: Colors.red,
-            child: const Icon(Icons.call_end, color: Colors.white),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: FloatingActionButton(
+              onPressed: () async {
+                context.read<CallCubit>().leaveCall();
+              },
+              backgroundColor: Colors.red,
+              child: const Icon(Icons.call_end, color: Colors.white),
+            ),
+          ),
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: IconButton(
+              style: IconButton.styleFrom(backgroundColor: Colors.white),
+              onPressed: () async {
+                micEnabled = !micEnabled;
+                await context
+                    .read<CallCubit>()
+                    .currentCall
+                    ?.setMicrophoneEnabled(enabled: micEnabled);
+              },
+              icon: const Icon(Icons.mic_off, color: Color(0xff67628e)),
+            ),
           ),
         ],
       ),
